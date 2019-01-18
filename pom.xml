@@ -71,6 +71,16 @@
       <artifactId>spark-streaming-flume_2.11</artifactId>
       <version>${spark.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.5</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-streaming-kafka-0-8_2.11</artifactId>
+      <version>${spark.version}</version>
+    </dependency>
     <!--Hbase-->
     <dependency>
       <groupId>org.apache.hbase</groupId>
@@ -82,13 +92,16 @@
       <artifactId>hbase-server</artifactId>
       <version>${hbase.version}</version>
     </dependency>
-
-
+    <!--flume-ng-log4jappender-->
+    <dependency>
+      <groupId>org.apache.flume.flume-ng-clients</groupId>
+      <artifactId>flume-ng-log4jappender</artifactId>
+      <version>1.6.0</version>
+    </dependency>
   </dependencies>
 
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
-    <testSourceDirectory>src/test/scala</testSourceDirectory>
     <plugins>
       <plugin>
         <groupId>org.scala-tools</groupId>
@@ -100,11 +113,6 @@
               <goal>compile</goal>
               <goal>testCompile</goal>
             </goals>
-            <configuration>
-              <args>
-                <arg>${project.build.directory}/.scala_dependencies</arg>
-              </args>
-            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -118,7 +126,6 @@
           <!-- If you have classpath issue like NoDefClassError,... -->
           <!-- useManifestOnlyJar>false</useManifestOnlyJar -->
           <includes>
-            <include>**/*Test.*</include>
             <include>**/*Suite.*</include>
           </includes>
         </configuration>

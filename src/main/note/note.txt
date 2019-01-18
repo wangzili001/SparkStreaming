@@ -1,0 +1,197 @@
+simple-agent.sources = netcat-source
+simple-agent.sinks = avro-sink
+simple-agent.channels = memory-channel
+
+simple-agent.sources.netcat-source.type = netcat
+simple-agent.sources.netcat-source.bind = hadoop
+simple-agent.sources.netcat-source.port = 44444
+
+simple-agent.sinks.avro-sink.type = avro
+simple-agent.sinks.avro-sink.hostname = hadoop
+simple-agent.sinks.avro-sink.port = 41414
+
+simple-agent.channels.memory-channel.type = memory
+
+simple-agent.sources.netcat-source.channels = memory-channel
+simple-agent.sinks.avro-sink.channel = memory-channel
+
+
+simple-agent.sources = netcat-source
+simple-agent.sinks = spark-sink
+simple-agent.channels = memory-channel
+
+simple-agent.sources.netcat-source.type = netcat
+simple-agent.sources.netcat-source.bind = hadoop
+simple-agent.sources.netcat-source.port = 44444
+
+simple-agent.sinks.spark-sink.type = org.apache.spark.streaming.flume.sink.SparkSink
+simple-agent.sinks.spark-sink.hostname = hadoop
+simple-agent.sinks.spark-sink.port = 41414
+
+simple-agent.channels.memory-channel.type = memory
+
+simple-agent.sources.netcat-source.channels = memory-channel
+simple-agent.sinks.spark-sink.channel = memory-channel
+
+./spark-submit --class com.spark.SparkStreamingFlume.FlumePushWordCount --master local[2] --packages org.apache.spark:spark-streaming-flume_2.11:2.2.0 /home/wangzili/sparkStreaming-1.0.jar hadoop 41414
+
+flume-ng agent --name simple-agent --conf /home/wangzili/app/flume/conf/ --conf-file /home/wangzili/app/flume/conf/flume_push_streaming.conf -Dflume.root.logger=INFO,console
+实时处理注意点：先启动flume后启动Spark Streaming应用程序
+flume-ng agent --name simple-agent --conf /home/wangzili/app/flume/conf/ --conf-file /home/wangzili/app/flume/conf/flume_pull_streaming.conf -Dflume.root.logger=INFO,console
+
+./spark-submit --class com.spark.SparkStreamingFlume.FlumePullWordCount --master local[2] --packages org.apache.spark:spark-streaming-flume_2.11:2.2.0 /home/wangzili/sparkStreaming-1.0.jar hadoop 41414
+
+
+Spark Streaming整合Kafka实战
+实战一：Receiver-based
+	第一步：启动zk
+	第二步：启动kafka   启动命令：./kafka-server-start.sh -daemon /home/wangzili/app/kafka/config/server.properties
+	第三步：创建topic   创建命令：./kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic kafka_streaming_topic
+						查看列表：./kafka-topics.sh --list --zookeeper localhost:2181
+	第四步：通过控制台测试topic能否正常生产和消费信息
+						创建生产者： ./kafka-console-producer.sh --broker-list 192.168.1.138:9092 --topic kafka_streaming_topic
+						创建消费者： ./kafka-console-consumer.sh --zookeeper 192.168.1.138:2181 --topic kafka_streaming_topic
+						******整合时候需要一步一步进行确保每一步无误*********
+						
+	生产环境提交：./spark-submit --class com.spark.SparkStreamingKafka.KafkaReceiverWordCount --master local[2] --name KafkaReceiverWordCount --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.2.0	/home/wangzili/sparkStreaming-1.0.jar 192.168.1.138:2181 test kafka_streaming_topic 1
+					
+实战二：Direct Approach
+
+
+
+
+
+基于Spark Streaming & Flume & Kafka打造通用的流处理平台
+	1)整合日志输出到Flume
+	
+	Flume 创建文件streaming.conf
+		agent1.sources=avro-source
+		agent1.channels=logger-channel
+		agent1.sink=log-sink
+		
+		agent1.sources.avro-source.type=avro
+		agent1.sources.avro-source.bind=192.168.1.138
+		agent1.sources.avro-source.port=41414
+		
+		agent1.channels.logger-channel.type=memory
+		
+		agent1.sink.log-sink.type=logger
+		
+		agent1.sources.avro-source.channels=logger-channel
+		agent1.sinks.log-sink.channels=logger-channel
+	Flume启动
+	 ./flume-ng agent --conf /home/wangzili/app/flume/conf/ --conf-file /home/wangzili/app/flume/conf/streaming.conf --name agent1 -Dflume.root.logger=INFO,console
+	Log4j输出到Flume
+		1.修改log4j日志格式
+			log4j.rootLogger=INFO,stdout,flume
+
+			log4j.appender.stdout = org.apache.log4j.ConsoleAppender
+			log4j.appender.stdout.target = System.out
+			log4j.appender.stdout.layout = org.apache.log4j.PatternLayout
+			log4j.appender.stdout.layout.ConversionPattern = %d{yyyy-MM-dd HH:mm:ss ,SSS} [%t] [%c] [%p] - %m%n
+		2.输出到Flume
+			log4j.appender.flume =org.apache.flume.clients.log4jappender.Log4jAppender
+			log4j.appender.flume.Hostname = 192.168.1.138
+			log4j.appender.flume.port=41414
+			log4j.appender.flume.UnsafeMode=true
+			
+		3.异常java.lang.ClassNotFoundException: org.apache.flume.clients.log4jappender.Log4jAppender
+			解决办法：添加依赖
+				<!--flume-ng-log4jappender-->
+				<dependency>
+				  <groupId>org.apache.flume.flume-ng-clients</groupId>
+				  <artifactId>flume-ng-log4jappender</artifactId>
+				  <version>1.6.0</version>
+				</dependency>
+	整合Flume到Kafka
+	
+	整合Kafka到Spark Streaming
+	
+	Spark Streaming对接受到的数据进行处理
+	
+	
+	
+	
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+SparkStreaming 项目实战
+*******************************************一步一测试  保证每一步都正确************************************************
+1.日志产生编写
+	generate_log.py
+2.linux crontab 定时执行任务
+	网站：http://tool.lu/crontab     */1 * * * *(每一分钟执行一次的crontab的表达式)
+crontab	-e 
+	*/1 * * * * /home/wangzili/logs/py/log_generate_log.sh
+3.对接python日志产生输出的日志到Flume
+	streaming_project.conf
+	选型：access.log ===> 控制台输出
+	exec
+	memory
+	logger
+	
+	exec-memory-logger.sources = exec-source
+	exec-memory-logger.sinks = logger-sink
+	exec-memory-logger.channels = memory-channel
+
+	exec-memory-logger.sources.exec-source.type = exec
+	exec-memory-logger.sources.exec-source.command = tail -F /home/wangzili/logs/access.log
+	exec-memory-logger.sources.exec-source.shell = /bin/sh -c
+
+	exec-memory-logger.channels.memory-channel.type = memory
+
+	exec-memory-logger.sinks.logger-sink.type = logger
+
+	exec-memory-logger.sources.exec-source.channels = memory-channel
+	exec-memory-logger.sinks.logger-sink.channel = memory-channel
+	
+  启动flume：flume-ng agent --name exec-memory-logger --conf /home/wangzili/app/flume/conf/ --conf-file /home/wangzili/app/flume/conf/streaming_project.conf -Dflume.root.logger=INFO,console
+4.日志==》Flume==》Kafka
+	1):启动Zookeeper  ./zkServer.sh start
+    2):启动Kafka   
+		./kafka-server-start.sh -daemon /home/wangzili/app/kafka/config/server.properties
+	3):修改Flume配置文件使得flume sink数据到Kafka
+	streaming_project_kafka.conf
+	
+	exec-memory-kafka.sources = exec-source
+	exec-memory-kafka.sinks = kafka-sink
+	exec-memory-kafka.channels = memory-channel
+
+	exec-memory-kafka.sources.exec-source.type = exec
+	exec-memory-kafka.sources.exec-source.command = tail -F /home/wangzili/logs/access.log
+	exec-memory-kafka.sources.exec-source.shell = /bin/sh -c
+
+	exec-memory-kafka.channels.memory-channel.type = memory
+
+	exec-memory-kafka.sinks.kafka-sink.type = org.apache.flume.sink.kafka.KafkaSink
+	exec-memory-kafka.sinks.kafka-sink.brokerList = 192.168.1.138:2181
+	exec-memory-kafka.sinks.kafka-sink.topic = streamingtopic
+	exec-memory-kafka.sinks.kafka-sink.batchSize = 5
+	exec-memory-kafka.sinks.kafka-sink.requiredAcks = 1
+
+	exec-memory-kafka.sources.exec-source.channels = memory-channel
+	exec-memory-kafka.sinks.kafka-sink.channel = memory-channel
+	
+  启动flume：flume-ng agent --name exec-memory-kafka --conf /home/wangzili/app/flume/conf/ --conf-file /home/wangzili/app/flume/conf/streaming_project_kafka.conf -Dflume.root.logger=INFO,console
+  创建topic ./kafka-topics.sh --create --zookeeper hadoop:2181 --replication-factor 1 --partitions 1 --topic streamingtopic
+  启动Kafka消费者  kafka-console-consumer.sh --zookeeper hadoop:2181 --topic streamingtopic
+  
+  异常：Space for commit to queue couldn't be acquired. Sinks are likely not keeping up with sources, or the buffer size is too tight
+	在streaming_project_kafka.conf增加：
+		exec-memory-kafka.channels.memory-channel.keep-alive = 60
+		exec-memory-kafka.channels.memory-channel.capacity = 1000000
+	将flume-ng 修改 JAVA_OPTS="-Xmx1024m"
+5.打通Flume&Kafka&Spark Streaming线路
+	*在Spark应用程序接受到数据并完成记录数据统计
+	
+	数据清洗操作
+	
