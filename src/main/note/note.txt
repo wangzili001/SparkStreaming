@@ -194,4 +194,46 @@ crontab	-e
 	*在Spark应用程序接受到数据并完成记录数据统计
 	
 	数据清洗操作
+	数据清洗结果类似如下：
+		ClickLog(98.124.156.168,20190118175501,128,200,-)
+		ClickLog(30.72.167.132,20190118175501,131,200,-)
+		ClickLog(132.87.124.28,20190118175501,131,200,-)
+		ClickLog(72.10.87.55,20190118175501,128,200,-)
+		ClickLog(46.55.124.30,20190118175501,145,500,-)
+		ClickLog(132.28.156.72,20190118175501,112,200,-)
+		ClickLog(156.55.167.72,20190118175501,131,404,-)
+		ClickLog(55.143.156.124,20190118175501,130,500,-)
+		ClickLog(72.55.167.132,20190118175501,145,500,-)
+		ClickLog(55.63.143.98,20190118175501,128,200,-)
+	补充一点： 配置不要太低
+		Hadoop/ZK/HBase/Spark Streaming/Flume/Kafka
+
+		
+功能1：今天到现在为止 实战课程的访问量
+		yyyyMMdd courseid
+		使用数据库来进行存储我们的统计结果
+		可视化前端根据：yyyyMMdd courseID吧数据库里面的统计结果展示出来
+		
+	选择什么数据库作为统计结果的存储呢？
+		RDBMS： MySQL，Oracle
+			day			course_id		click_count
+			20190121		1				10
+			20190121		2				10
+	NoSQL: HBase/Spark,Redis...
+		HBase: 一个API就能搞定，非常方便
+		20190121 + 1 ==》click_count + 下一个批次的统计结果
 	
+	HBase表设计
+		创建表：
+			create 'wzl_course_clickcount','info'
+		
+		Rowkey设计
+			day_courseid
+
+功能2：统计今天到现在为止从搜索引擎引流过来的实战课程的访问量（功能一+从搜索引擎引流过来的数据量）
+		
+		HBase表设计
+			create 'wzl_course_search_clickcount','info'
+		rowkey设计
+			20190122 + search + 1
+		
